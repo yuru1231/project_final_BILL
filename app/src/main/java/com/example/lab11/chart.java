@@ -1,96 +1,91 @@
 package com.example.lab11;
 
+import android.content.Context;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
 import android.os.Bundle;
-import androidx.appcompat.app.AppCompatActivity;
-import com.github.mikephil.charting.charts.BarChart;
-import com.github.mikephil.charting.charts.PieChart;
-import com.github.mikephil.charting.data.BarData;
-import com.github.mikephil.charting.data.BarDataSet;
-import com.github.mikephil.charting.data.BarEntry;
-import com.github.mikephil.charting.data.Entry;
-import com.github.mikephil.charting.data.PieData;
-import com.github.mikephil.charting.data.PieDataSet;
-import com.github.mikephil.charting.data.PieEntry;
+import android.util.AttributeSet;
+import android.view.View;
 
-import java.util.ArrayList;
+import androidx.appcompat.app.AppCompatActivity;
 
 public class chart extends AppCompatActivity {
-
-    private PieChart pieChart;
-    private BarChart barChart;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.chart);
+        setContentView(R.layout.chart); // 替换为你的布局文件名称
 
-        // 綁定 XML 中的圖表控件
-        pieChart = findViewById(R.id.pieChart);
-        barChart = findViewById(R.id.barChart);
-
-        // 初始化並顯示圖表
-        setupPieChart();
-        loadPieChartData();
-
-        setupBarChart();
-        loadBarChartData();
+        // 动态获取 PieChartView 并设置数据
+        PieChartView pieChartView = findViewById(R.id.pieChartView);
+        float[] data = {50f, 25f, 15f, 10f};
+        int[] colors = {Color.RED, Color.GREEN, Color.BLUE, Color.rgb(255, 165, 0)};
+        String[] labels = {"A", "B", "C", "D"};
+        pieChartView.setData(data, colors, labels);
     }
 
-    // 配置圓餅圖
-    private void setupPieChart() {
-        pieChart.setUsePercentValues(true);
-        pieChart.getDescription().setEnabled(false);
-        pieChart.setDrawHoleEnabled(true);
-        pieChart.setHoleColor(Color.WHITE);
-        pieChart.setTransparentCircleRadius(55f);
-        pieChart.setCenterText("支出比例");
-        pieChart.setCenterTextSize(16f);
-        pieChart.setEntryLabelTextSize(12f);
-        pieChart.setEntryLabelColor(Color.BLACK);
-    }
+    public static class PieChartView extends View {
+        private Paint paint; // 画笔
+        private float[] data = {50f, 30f, 20f, 10f}; // 每一部分的百分比
+        private int[] colors = {Color.RED, Color.GREEN, Color.BLUE, Color.rgb(255, 165, 0)}; // 每部分的颜色
+        private String[] labels = {"A", "B", "C", "D"}; // 标签
 
-    // 加載圓餅圖數據
-    private void loadPieChartData() {
-        ArrayList<PieEntry> entries = new ArrayList<>();
-        entries.add(new PieEntry(40f, "食品"));
-        entries.add(new PieEntry(30f, "交通"));
-        entries.add(new PieEntry(20f, "娛樂"));
-        entries.add(new PieEntry(10f, "其他"));
+        // 构造函数，用于 XML
+        public PieChartView(Context context, AttributeSet attrs) {
+            super(context, attrs);
+            paint = new Paint();
+            paint.setAntiAlias(true); // 平滑效果
+        }
 
-        PieDataSet dataSet = new PieDataSet(entries, "支出類別");
-        dataSet.setColors(new int[]{Color.RED, Color.BLUE, Color.GREEN, Color.YELLOW});
-        dataSet.setValueTextColor(Color.WHITE);
-        dataSet.setValueTextSize(14f);
+        @Override
+        protected void onDraw(Canvas canvas) {
+            super.onDraw(canvas);
 
-        PieData data = new PieData(dataSet);
-        pieChart.setData(data);
-        pieChart.invalidate(); // 刷新圖表
-    }
+            if (data == null || data.length == 0) {
+                return; // 无数据时不绘制
+            }
 
-    // 配置長條圖
-    private void setupBarChart() {
-        barChart.getDescription().setEnabled(false);
-        barChart.setFitBars(true); // 確保長條對齊
-        barChart.setDrawGridBackground(false);
-    }
+            float total = 0;
+            for (float value : data) {
+                total += value;
+            }
 
-    // 加載長條圖數據
-    private void loadBarChartData() {
-        ArrayList<BarEntry> entries = new ArrayList<>();
-        entries.add(new BarEntry(1f, 5000f)); // 一月
-        entries.add(new BarEntry(2f, 3000f)); // 二月
-        entries.add(new BarEntry(3f, 7000f)); // 三月
-        entries.add(new BarEntry(4f, 4000f)); // 四月
-        entries.add(new BarEntry(5f, 6000f)); // 五月
+            float startAngle = 0;
+            float centerX = getWidth() / 2;
+            float centerY = getHeight() / 2;
+            float radius = Math.min(centerX, centerY) - 20;
 
-        BarDataSet dataSet = new BarDataSet(entries, "月支出");
-        dataSet.setColors(Color.parseColor("#FFA726")); // 橙色
-        dataSet.setValueTextColor(Color.BLACK);
-        dataSet.setValueTextSize(12f);
+            // 绘制饼图
+            for (int i = 0; i < data.length; i++) {
+                float sweepAngle = data[i] / total * 360;
+                paint.setColor(colors[i]);
+                canvas.drawArc(centerX - radius, centerY - radius, centerX + radius, centerY + radius,
+                        startAngle, sweepAngle, true, paint);
 
-        BarData data = new BarData(dataSet);
-        barChart.setData(data);
-        barChart.invalidate(); // 刷新圖表
+                // 在扇形中心绘制标签
+                float textAngle = startAngle + sweepAngle / 2; // 计算扇形中间角度
+                float textRadius = radius / 2; // 标签位置在半径的中间
+                float textX = (float) (centerX + textRadius * Math.cos(Math.toRadians(textAngle)));
+                float textY = (float) (centerY + textRadius * Math.sin(Math.toRadians(textAngle)));
+
+                paint.setColor(Color.BLACK); // 标签颜色
+                paint.setTextSize(50);
+                canvas.drawText(labels[i], textX, textY, paint); // 绘制标签
+
+                startAngle += sweepAngle;
+            }
+        }
+
+        // 更新数据的方法（支持动态更新）
+        public void setData(float[] newData, int[] newColors, String[] newLabels) {
+            if (newData.length != newColors.length || newColors.length != newLabels.length) {
+                throw new IllegalArgumentException("Data, colors, and labels must have the same length");
+            }
+            this.data = newData;
+            this.colors = newColors;
+            this.labels = newLabels;
+            invalidate(); // 重绘
+        }
     }
 }
